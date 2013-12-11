@@ -293,6 +293,7 @@ public class MainActivity extends JuickFragmentActivity implements
         toggleXMPP(this);
         toggleJAMessaging();
         startService(new Intent(this, DatabaseService.class));
+        OutgoingMessageQueue.init(this);
 
         clearObsoleteImagesInCache();
 

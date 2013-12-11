@@ -1101,5 +1101,42 @@ public class Utils {
         return sb.toString();
     }
 
+    public static File getDir(Context context, String name) {
+        File dir = context.getDir(name, Context.MODE_PRIVATE);
+        dir.mkdirs();
+        return dir;
+    }
+
+    public static boolean writeObjectToFile(String path, Serializable obj) {
+        return writeObjectToFile(new File(path), obj);
+    }
+
+    public static boolean writeObjectToFile(File file, Serializable obj) {
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file));
+            oos.writeObject(obj);
+            oos.flush();
+            return true;
+        } catch (IOException ex) {
+            ex.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        return false;
+    }
+
+    public static Object readObjectFromFile(String path) {
+        return readObjectFromFile(new File(path));
+    }
+
+    public static Object readObjectFromFile(File file) {
+        try {
+            ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(file));
+            Object retval = objectInputStream.readObject();
+            objectInputStream.close();
+            return retval;
+        } catch (Exception ex) {
+            ex.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        return null;
+    }
 
 }
