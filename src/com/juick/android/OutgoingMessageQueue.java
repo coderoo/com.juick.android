@@ -2,7 +2,6 @@ package com.juick.android;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 
@@ -31,6 +30,27 @@ public class OutgoingMessageQueue {
     // this is a dummy outgoing message, it will be replaced with MicroBlogOutgoingMessage
     public class OutgoingMessage implements Serializable {
         private long sendAt;
+    }
+
+    public static class QueueStats {
+        private int messagesCount;
+        private long totalSizeOfMessages;
+
+        public int getMessagesCount() {
+            return messagesCount;
+        }
+
+        public void setMessagesCount(int messagesCount) {
+            this.messagesCount = messagesCount;
+        }
+
+        public long getTotalSizeOfMessages() {
+            return totalSizeOfMessages;
+        }
+
+        public void setTotalSizeOfMessages(long totalSizeOfMessages) {
+            this.totalSizeOfMessages = totalSizeOfMessages;
+        }
     }
 
     public static void init(Context context) {
@@ -65,8 +85,16 @@ public class OutgoingMessageQueue {
         return (OutgoingMessage) Utils.readObjectFromFile(elementId);
     }
 
-    public static int getApproximateSize(Context context) {
-        return getDir(context).list().length;
+    public static QueueStats getQueueStats(Context context) {
+        File[] elements = loadElements(context);
+        QueueStats stats = new QueueStats();
+        stats.setMessagesCount(elements.length);
+        long totalSizeOfMessages = 0;
+        for (File element : elements) {
+            totalSizeOfMessages += element.length();
+        }
+        stats.setTotalSizeOfMessages(totalSizeOfMessages);
+        return stats;
     }
 
     public static class ElementNameUtils {
