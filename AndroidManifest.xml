@@ -190,6 +190,7 @@
             <meta-data android:name="android.accounts.AccountAuthenticator" android:resource="@xml/authenticator"/>
         </service>
         <service android:name="com.juick.android.DatabaseService" android:exported="false"/>
+        <service android:name="com.juick.android.OutgoingMessageQueueService" android:exported="false"/>
         <service android:name="com.juick.android.XMPPService" android:exported="false"/>
         <service android:name="com.juick.android.JAMService" android:exported="false"/>
         <service android:name="com.juick.android.ContactsSyncService" android:exported="true"

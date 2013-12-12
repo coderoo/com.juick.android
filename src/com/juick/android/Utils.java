@@ -20,6 +20,7 @@ package com.juick.android;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.Service;
 import android.content.*;
 import android.graphics.Bitmap;
@@ -1099,6 +1100,10 @@ public class Utils {
             sb.append(s.replace("@", "[SOBAKA]"));
         }
         return sb.toString();
+    }
+
+    public static String longToPaddedHexString(long value) {
+        return String.format("%016x", value);
     }
 
     public static File getDir(Context context, String name) {

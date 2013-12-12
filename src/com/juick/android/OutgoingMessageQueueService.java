@@ -18,15 +18,7 @@ public class OutgoingMessageQueueService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        String elementId;
-        while (true) {
-            elementId = OutgoingMessageQueue.peekElementId(getApplicationContext());
-            if (elementId == null) {
-                break; // no more messages to send
-            }
-            // TODO Code to send the message goes here (use OutgoingMessageQueue.getElement())
-            // if we sent the message successfully then delete the message from the queue
-            OutgoingMessageQueue.delete(getApplicationContext(), elementId);
-        }
+        OutgoingMessageQueue.processQueue(getApplicationContext());
     }
+
 }
