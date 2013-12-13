@@ -1199,21 +1199,21 @@ public class MainActivity extends JuickFragmentActivity implements
                 return true;
 
             case R.id.menuitem_create_one_outgoing_message:
-                OutgoingMessageQueue.debugAddDummyMessage(this);
+                OutgoingMessageQueue.debugAddDummyMessage();
                 return true;
             case R.id.menuitem_create_five_outgoing_messages:
                 for (int i = 0; i < 5; i++) {
-                    OutgoingMessageQueue.debugAddDummyMessage(this);
+                    OutgoingMessageQueue.debugAddDummyMessage();
                 }
                 return true;
             case R.id.menuitem_show_outgoing_queue_stats:
                 showOutgoingQueueStats();
                 return true;
             case R.id.menuitem_process_queue:
-                OutgoingMessageQueue.processQueue(this);
+                OutgoingMessageQueue.processQueue();
                 return true;
             case R.id.menuitem_clear_queue:
-                OutgoingMessageQueue.clear(this);
+                OutgoingMessageQueue.clear();
                 return true;
 
             default:
@@ -1222,7 +1222,7 @@ public class MainActivity extends JuickFragmentActivity implements
     }
 
     private void showOutgoingQueueStats() {
-        Toast.makeText(this, OutgoingMessageQueue.getQueueStats(this).asString(), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, OutgoingMessageQueue.getQueueStats().asString(), Toast.LENGTH_LONG).show();
     }
 
     private void obtainSavedMessagesURL(final boolean reset) {

@@ -18,7 +18,7 @@ public class OutgoingMessageQueueService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        OutgoingMessageQueue.processQueue(getApplicationContext());
+        OutgoingMessageQueue.processQueue();
     }
 
 }

@@ -21,9 +21,10 @@ import java.util.Comparator;
 public class OutgoingMessageQueue {
 
     private static final String QUEUE_DIR = "OutgoingMessageQueue";
+    private static File absoluteQueueDir;
+    private static RecurringTask recurringTask;
+
     private static final String FILE_SUFFIX = ".out";
-    private static final long SERVICE_ALARM_INITIAL_DELAY_MILLIS = 10 * 1000L;
-    private static final long SERVICE_ALARM_INTERVAL_MILLIS = 20 * 1000L;
     private static final String LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam eget orci eget turpis rutrum pharetra nec ac urna. Vestibulum hendrerit fermentum libero, ac iaculis leo vestibulum sed. Quisque lacus justo, fringilla vel dui consequat, venenatis tempor velit. Aliquam lacinia nisi vitae massa ultrices consequat. Nulla ornare, purus sed rutrum vulputate, metus lacus posuere felis, eu laoreet purus ipsum pharetra nibh. Phasellus sodales, odio non gravida semper, diam risus facilisis neque, vitae varius sapien enim ultrices nulla. Vestibulum non nibh sed enim venenatis accumsan. Duis ut enim quis justo aliquet pretium id in nunc. Morbi semper euismod ante, vel rhoncus nulla hendrerit quis.\n" +
             "\n" +
             "In ac vulputate lectus. Praesent convallis urna nec arcu vehicula, non tristique lectus interdum. Ut vitae tellus vitae risus posuere hendrerit aliquam in lectus. Integer non purus purus. Cras eget bibendum felis. Pellentesque porttitor semper tristique. Duis vel aliquam metus. Vivamus rhoncus sagittis est id gravida. Vestibulum quis vulputate nunc. Etiam vel odio eget orci sagittis tempor a eget libero. Donec ullamcorper cursus nibh nec hendrerit. Nulla in dui non arcu venenatis lobortis. In non varius lacus. Donec sapien massa, euismod eget facilisis sit amet, dictum quis nisi. Praesent mauris velit, gravida sit amet sagittis nec, tincidunt sit amet ante.\n" +
@@ -34,30 +35,35 @@ public class OutgoingMessageQueue {
             "\n" +
             "Nunc commodo fringilla feugiat. Suspendisse id odio sollicitudin, hendrerit diam ut, ultricies lacus. Aliquam non orci magna. Aliquam at arcu eu nibh porttitor consequat ut vel turpis. Maecenas congue urna lacus, ut suscipit libero tempus non. Integer elementum fermentum amet.";
 
+    private OutgoingMessageQueue(){
+        absoluteQueueDir = Utils.getDir(context, QUEUE_DIR);
+
+        recurringTask = new RecurringTask(context, OutgoingMessageQueueService.class);
+        recurringTask.scheduleRepeatingService(false);
+        if (getQueueStats().getMessagesCount() > 0) {
+            recurringTask.getScheduler().startService();
+        }
+    }
+
     public static void init(Context context) {
-        setRepeatingAlarmToNudgeService(context);
     }
 
-    private static File getDir(Context context) {
-        return Utils.getDir(context, QUEUE_DIR);
-    }
-
-    public static boolean debugAddDummyMessage(Context context) {
+    public static boolean debugAddDummyMessage() {
         OutgoingMessage message = new OutgoingMessage();
         int beginIndex = (int) (Math.random() * 1000);
         int len = 10 + (int) (Math.random() * 1900);
         message.setMsg(LOREM_IPSUM.substring(beginIndex, beginIndex + len).trim());
-        return add(context, message);
+        return add(message);
     }
 
-    public static boolean add(Context context, OutgoingMessage message) {
+    public static boolean add(OutgoingMessage message) {
         try {
             long sendDelaySeconds = 120;
             String prefix = ElementNameUtils.generateNamePrefix(System.currentTimeMillis(), sendDelaySeconds);
-            File file = File.createTempFile(prefix, FILE_SUFFIX, getDir(context));
+            File file = File.createTempFile(prefix, FILE_SUFFIX, absoluteQueueDir);
             boolean writeOK = Utils.writeObjectToFile(file, message);
             if (writeOK) {
-                nudgeService(context);
+                recurringTask.getScheduler().startService();
             }
             return writeOK;
         } catch (IOException e) {
@@ -75,8 +81,8 @@ public class OutgoingMessageQueue {
         return (OutgoingMessage) Utils.readObjectFromFile(elementId);
     }
 
-    public static QueueStats getQueueStats(Context context) {
-        File[] elements = loadElements(context);
+    public static QueueStats getQueueStats() {
+        File[] elements = loadElements();
         QueueStats stats = new QueueStats();
         stats.setMessagesCount(elements.length);
         long totalSizeOfMessages = 0;
@@ -87,8 +93,8 @@ public class OutgoingMessageQueue {
         return stats;
     }
 
-    public static File[] loadElements(Context context) {
-        File[] elements = getDir(context).listFiles();
+    public static File[] loadElements() {
+        File[] elements = absoluteQueueDir.listFiles();
         Arrays.sort(elements, new Comparator<File>() {
             public int compare(File f1, File f2) {
                 return (f1.getName()).compareTo(f2.getName());
@@ -97,8 +103,8 @@ public class OutgoingMessageQueue {
         return elements;
     }
 
-    public static String peekElementId(Context context) {
-        File[] elements = loadElements(context);
+    public static String peekElementId() {
+        File[] elements = loadElements();
         if (elements.length == 0) {
             return null; // the queue is empty
         }
@@ -113,17 +119,18 @@ public class OutgoingMessageQueue {
         return suitableElementId;
     }
 
-    public static void clear(Context context) {
-        for (File file : loadElements(context)) {
+    public static void clear() {
+        for (File file : loadElements()) {
             delete(file.getAbsolutePath());
         }
     }
 
-    public static void processQueue(Context context) {
+    // TODO This method is called from the service - need to fix context
+    public static void processQueue() {
         String elementId;
         try {
             while (true) {
-                elementId = peekElementId(context);
+                elementId = peekElementId();
                 if (elementId == null) {
                     break; // no more messages to send
                 }
@@ -139,20 +146,6 @@ public class OutgoingMessageQueue {
         } catch (Exception ex) {
             ex.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
-    }
-
-    public static void nudgeService(Context context) {
-        Intent intent = new Intent(context, OutgoingMessageQueueService.class);
-        context.startService(intent);
-    }
-
-    public static void setRepeatingAlarmToNudgeService(Context context) {
-        Calendar cal = Calendar.getInstance();
-        Intent intent = new Intent(context, OutgoingMessageQueueService.class);
-        PendingIntent pintent = PendingIntent.getService(context, 0, intent, 0);
-        AlarmManager alarm = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        long triggerAtTime = cal.getTimeInMillis() + SERVICE_ALARM_INITIAL_DELAY_MILLIS;
-        alarm.setRepeating(AlarmManager.RTC, triggerAtTime, SERVICE_ALARM_INTERVAL_MILLIS, pintent);
     }
 
     public static class QueueStats {
